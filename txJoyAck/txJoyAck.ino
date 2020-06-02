@@ -39,14 +39,19 @@ int rawCurrentMotor1 = 0;
 int rawCurrentMotor2 = 0;
 
 unsigned int oldBatt;
+unsigned int oldTemp1;
+unsigned int oldTemp2;
+int oldCurrentMotor1;
+int oldCurrentMotor2;
 
-// Max size of this struct is 32 bytes - NRF24L01 buffer limit
-struct Data_Package {
+//package to contain outgoing data
+struct dataPackage {
   byte throttle;
   byte steering;
 };
-Data_Package data; //Create a variable with the above structure
+dataPackage data;
 
+//package to contain incoming acknowledge data
 struct ackPackage {
   byte highBatt;
   byte lowBatt;
@@ -62,8 +67,6 @@ struct ackPackage {
 ackPackage ack;
 
 void setup() {
-  //Serial.begin(9600);
-
   tft.begin();
   tft.setRotation(2);
   tft.fillScreen(ILI9341_BLACK);
@@ -89,19 +92,6 @@ void setup() {
   //set default data values
   data.throttle = 64;
   data.steering = 64;
-
-  /*//Set default ack values
-    ack.highBatt = 0;
-    ack.lowBatt = 0;
-    ack.highTemp1 = 0;
-    ack.lowTemp1 = 0;
-    ack.highTemp2 = 0;
-    ack.lowTemp2 = 0;
-    ack.highIM1 = 0;
-    ack.lowIM1 = 0;
-    ack.highIM2 = 0;
-    ack.lowIM2 = 0;
-  */
 }
 
 void loop() {
@@ -109,70 +99,80 @@ void loop() {
   data.throttle = map(analogRead(A1), 0, 1023, 127, 0);
   data.steering = map(analogRead(A0), 0, 1023, 0, 127);
 
-  radio.write(&data, sizeof(Data_Package));
+  radio.write(&data, sizeof(dataPackage));
   if (radio.isAckPayloadAvailable() ) {
     radio.read(&ack, sizeof(ackPackage));
-    /*
-      Serial.print(ack.rawBatt);
-      Serial.print(",");
-      Serial.print(ack.rawTemp1);
-      Serial.print(",");
-      Serial.print(ack.rawTemp2);
-      Serial.print(",");
-      Serial.print(ack.rawCurrentMotor1);
-      Serial.print(",");
-      Serial.println(ack.rawCurrentMotor2);
-    */
 
-    //reconstitute bytes and do math
+    //reconstitute acknowledge bytes
     rawBatt = (ack.highBatt << 8 ) + ack.lowBatt;
+    rawTemp1 = (ack.highTemp1 << 8) + ack.lowTemp1;
+    rawTemp2 = (ack.highTemp2 << 8) + ack.lowTemp2;
+    rawCurrentMotor1 = (ack.highIM1 << 8) + ack.lowIM1;
+    rawCurrentMotor2 = (ack.highIM2 << 8) + ack.lowIM2;
+
+    //convert received tenths/hundredths data to whole numbers
     int mainBattery = rawBatt / 10;
-    //int temp1 = ack.rawTemp1 / 10;
-    //int temp2 = ack.rawTemp2 / 10;
-    //int currentM1 = ack.rawCurrentMotor1 / 100;
-    //int currentM2 = ack.rawCurrentMotor2 / 100;
+    int temp1 = rawTemp1 / 10;
+    int temp2 = rawTemp2 / 10;
+    int currentM1 = rawCurrentMotor1 / 100;
+    int currentM2 = rawCurrentMotor2 / 100;
 
     //print battery value
     if (oldBatt != rawBatt) {
       tft.fillRect(110, 0, 120, 24, ILI9341_BLACK);
     }
     tft.setCursor(110, 0);
-    //tft.print(ack.rawBatt);
     tft.print(mainBattery);
     tft.print(".");
     tft.print(rawBatt - (mainBattery * 10));
     tft.print("V ");
 
-    /*   //print temp1 value
-       tft.setCursor(110, 24);
-       tft.print(temp1);
-       tft.print(".");
-       tft.print(ack.rawTemp1 - (temp1 * 10));
-       tft.print((char)247);
-       tft.print("C ");
+    //print temp1 value
+    if (oldTemp1 != rawTemp1) {
+      tft.fillRect(110, 24, 120, 24, ILI9341_BLACK);
+    }
+    tft.setCursor(110, 24);
+    tft.print(temp1);
+    tft.print(".");
+    tft.print(rawTemp1 - (temp1 * 10));
+    tft.print((char)247);
+    tft.print("C ");
 
-       //prtin temp2 value
-       tft.setCursor(110, 48);
-       tft.print(temp2);
-       tft.print(".");
-       tft.print(ack.rawTemp2 - (temp2 * 10));
-       tft.print((char)247);
-       tft.print("C ");
+    //prtin temp2 value
+    if (oldTemp2 != rawTemp2) {
+      tft.fillRect(110, 48, 120, 24, ILI9341_BLACK);
+    }
+    tft.setCursor(110, 48);
+    tft.print(temp2);
+    tft.print(".");
+    tft.print(rawTemp2 - (temp2 * 10));
+    tft.print((char)247);
+    tft.print("C ");
 
-       //print M1 current value
-       tft.setCursor(60, 96);
-       tft.print(currentM1);
-       tft.print(".");
-       tft.print(ack.rawCurrentMotor1 - (currentM1 * 100));
-       tft.print("A ");
+    //print M1 current value
+    if (oldCurrentMotor1 != rawCurrentMotor1) {
+      tft.fillRect(60, 96, 120, 24, ILI9341_BLACK);
+    }
+    tft.setCursor(60, 96);
+    tft.print(currentM1);
+    tft.print(".");
+    tft.print(rawCurrentMotor1 - (currentM1 * 100));
+    tft.print("A ");
 
-       //print M2 current value
-       tft.setCursor(60, 144);
-       tft.print(currentM2);
-       tft.print(".");
-       tft.print(ack.rawCurrentMotor2 - (currentM2 * 100));
-       tft.print("A ");
-    */
+    //print M2 current value
+    if (oldCurrentMotor2 != rawCurrentMotor2) {
+      tft.fillRect(60, 144, 120, 24, ILI9341_BLACK);
+    }
+    tft.setCursor(60, 144);
+    tft.print(currentM2);
+    tft.print(".");
+    tft.print(rawCurrentMotor2 - (currentM2 * 100));
+    tft.print("A ");
+
     oldBatt = rawBatt;
+    oldTemp1 = rawTemp1;
+    oldTemp2 = rawTemp2;
+    oldCurrentMotor1 = rawCurrentMotor1;
+    oldCurrentMotor2 = rawCurrentMotor2;
   }
 }
