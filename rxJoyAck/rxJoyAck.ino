@@ -40,7 +40,7 @@ int readThreshold = 10;
 // Max size of this struct is 32 bytes - NRF24L01 buffer limit
 struct dataPackage {
   byte throttle;
-  byte steeting;
+  byte steering;
 };
 dataPackage data; //Create a variable with the above structure
 
@@ -137,7 +137,7 @@ void loop() {
   Serial2.write(COMMAND);
   Serial2.write(LINE1);
   Serial2.print("Steering: ");
-  Serial2.print(data.steeting);
+  Serial2.print(data.steering);
   Serial2.print("   ");
 
 
@@ -152,7 +152,7 @@ void clearLCD(void) {
 void resetData() {
   //Reset the values when there is no radio connection
   data.throttle = 64;
-  data.steeting = 64;
+  data.steering = 64;
 }
 
 void updateACK() {

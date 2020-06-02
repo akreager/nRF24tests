@@ -43,7 +43,7 @@ unsigned int oldBatt;
 // Max size of this struct is 32 bytes - NRF24L01 buffer limit
 struct Data_Package {
   byte throttle;
-  byte steeting;
+  byte steering;
 };
 Data_Package data; //Create a variable with the above structure
 
@@ -88,7 +88,7 @@ void setup() {
 
   //set default data values
   data.throttle = 64;
-  data.steeting = 64;
+  data.steering = 64;
 
   /*//Set default ack values
     ack.highBatt = 0;
@@ -107,7 +107,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   data.throttle = map(analogRead(A1), 0, 1023, 127, 0);
-  data.steeting = map(analogRead(A0), 0, 1023, 0, 127);
+  data.steering = map(analogRead(A0), 0, 1023, 0, 127);
 
   radio.write(&data, sizeof(Data_Package));
   if (radio.isAckPayloadAvailable() ) {
