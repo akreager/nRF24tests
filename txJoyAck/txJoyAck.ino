@@ -24,19 +24,25 @@
 #define CE_PIN 9
 #define CSN_PIN 10
 RF24 radio(CE_PIN, CSN_PIN);
+const byte address[6] = "00001";
 
-// The display uses hardware SPI1, plus #6 & #3
+//The display uses hardware SPI1, plus #6 & #3
 #define TFT_CS 6
 #define TFT_DC 3
 Adafruit_ILI9341 tft = Adafruit_ILI9341(&SPI1, TFT_DC, TFT_CS);
 
-const byte address[6] = "00001";
+//Custom color definitions
+#define SHADOW 0x2965
 
-unsigned int rawBatt = 0;
-unsigned int rawTemp1 = 0;
-unsigned int rawTemp2 = 0;
-int rawCurrentMotor1 = 0;
-int rawCurrentMotor2 = 0;
+//Joystick pins
+#define joy_X A0
+#define joy_Y A1
+
+unsigned int rawBatt = 185;
+unsigned int rawTemp1 = 225;
+unsigned int rawTemp2 = 231;
+int rawCurrentMotor1 = 521;
+int rawCurrentMotor2 = 482;
 
 unsigned int oldBatt;
 unsigned int oldTemp1;
@@ -69,23 +75,12 @@ ackPackage ack;
 void setup() {
   tft.begin();
   tft.setRotation(2);
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setCursor(0, 0);
-  tft.setTextColor(ILI9341_WHITE);
-  tft.setTextSize(3);
-  tft.println("Batt:");
-  tft.println("Temp1:");
-  tft.println("Temp2:");
-  tft.println("M1 Current:");
-  tft.println();
-  tft.println("M2 Current: ");
-  tft.setTextColor(ILI9341_GREEN);
+  drawHome();
 
   radio.begin();
   radio.openWritingPipe(address);
   radio.setDataRate(RF24_250KBPS);
   radio.setPALevel(RF24_PA_MIN);
-  //radio.stopListening();
   radio.enableAckPayload();
   radio.setRetries(3, 5);
 
@@ -117,21 +112,18 @@ void loop() {
     int currentM1 = rawCurrentMotor1 / 100;
     int currentM2 = rawCurrentMotor2 / 100;
 
+    tft.setTextSize(3);
+    tft.setTextColor(ILI9341_GREEN, ILI9341_BLACK);
+
     //print battery value
-    if (oldBatt != rawBatt) {
-      tft.fillRect(110, 0, 120, 24, ILI9341_BLACK);
-    }
-    tft.setCursor(110, 0);
+    tft.setCursor(112, 30);
     tft.print(mainBattery);
     tft.print(".");
     tft.print(rawBatt - (mainBattery * 10));
     tft.print("V ");
 
     //print temp1 value
-    if (oldTemp1 != rawTemp1) {
-      tft.fillRect(110, 24, 120, 24, ILI9341_BLACK);
-    }
-    tft.setCursor(110, 24);
+    tft.setCursor(112, 54);
     tft.print(temp1);
     tft.print(".");
     tft.print(rawTemp1 - (temp1 * 10));
@@ -139,10 +131,7 @@ void loop() {
     tft.print("C ");
 
     //prtin temp2 value
-    if (oldTemp2 != rawTemp2) {
-      tft.fillRect(110, 48, 120, 24, ILI9341_BLACK);
-    }
-    tft.setCursor(110, 48);
+    tft.setCursor(112, 78);
     tft.print(temp2);
     tft.print(".");
     tft.print(rawTemp2 - (temp2 * 10));
@@ -150,29 +139,17 @@ void loop() {
     tft.print("C ");
 
     //print M1 current value
-    if (oldCurrentMotor1 != rawCurrentMotor1) {
-      tft.fillRect(60, 96, 120, 24, ILI9341_BLACK);
-    }
-    tft.setCursor(60, 96);
+    tft.setCursor(80, 126);
     tft.print(currentM1);
     tft.print(".");
     tft.print(rawCurrentMotor1 - (currentM1 * 100));
     tft.print("A ");
 
     //print M2 current value
-    if (oldCurrentMotor2 != rawCurrentMotor2) {
-      tft.fillRect(60, 144, 120, 24, ILI9341_BLACK);
-    }
-    tft.setCursor(60, 144);
+    tft.setCursor(80, 174);
     tft.print(currentM2);
     tft.print(".");
     tft.print(rawCurrentMotor2 - (currentM2 * 100));
     tft.print("A ");
-
-    oldBatt = rawBatt;
-    oldTemp1 = rawTemp1;
-    oldTemp2 = rawTemp2;
-    oldCurrentMotor1 = rawCurrentMotor1;
-    oldCurrentMotor2 = rawCurrentMotor2;
   }
 }
